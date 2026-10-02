@@ -77,6 +77,35 @@ citecheck ask "What problem does RAG solve, and which paper introduced it?"
 code outbox/report.md
 ```
 
+<details>
+<summary>PowerShell</summary>
+
+```powershell
+# 1. Install
+uv venv --python 3.12
+uv sync --extra dev --extra openai
+Copy-Item .env.example .env      # optional; defaults already target local Ollama
+
+# 2. Pull a model that fits 6 GB VRAM
+ollama pull qwen2.5:7b-instruct
+
+# 3. Keep the context inside 6 GB instead of spilling to CPU.
+#    Set this in every shell that talks to Ollama; the numbers in
+#    docs/EVALUATION.md were measured with it set to 8192.
+$env:OLLAMA_NUM_CTX = "8192"
+
+# 4. Seed the workspace and knowledge base
+citecheck init
+
+# 5. Ask a question
+citecheck ask "What problem does RAG solve, and which paper introduced it?"
+
+# 6. Read the report
+code outbox/report.md
+```
+
+</details>
+
 If `ollama` is not running, everything except `ask` still works — the eval
 harness, the guardrail tests, and the MCP server all run offline.
 
@@ -251,11 +280,30 @@ tables, findings and limitations are in
 
 > **Expect modest absolute numbers.** A 7B model running locally is materially
 > weaker than a frontier model at multi-step tool use, and the eval says so:
-> 40% pass rate on the core run. The interesting result is not that figure.
-> Two same-size models on the same GPU differ far more in *citation precision*
-> (0.78 vs 0.30) than in task accuracy (50% vs 40%) — so what a model is worth
-> here depends on how much you verify it. There is no cost axis to plot; both
-> models are free and local, which is the point.
+> 60% pass rate on the core run, 0.79 citation precision. The interesting result
+> is not that figure. Two same-size models on the same GPU differ far more in
+> *citation precision* (0.78 vs 0.30) than in task accuracy (50% vs 40%) — so
+> what a model is worth here depends on how much you verify it. There is no cost
+> axis to plot; both models are free and local, which is the point.
+
+Three results are worth reading the write-up for:
+
+- **The eval found real bugs in the agent.** The suite was written to measure
+  the agent, and it did: it caught a seeder that silently doubled a table, an
+  empty query result being scored as evidence, and a finalize nudge whose own
+  wording was causing the transport failures it appeared to diagnose. Fixing the
+  nudge — asking for a condensed answer instead of the previous report verbatim —
+  moved the core run from 40% to 60% pass rate, 0.69 to 0.79 citation precision,
+  and 4 exceptions to 0. Nothing but the eval would have caught it.
+- **Planning first is free.** `plan_then_execute` beats `react` by 20 points of
+  pass rate and 0.22 of citation precision for 3% more tokens.
+- **`single_shot` scores 0%** — it never calls a tool, so it has no sources, no
+  citations, and nothing to verify. The cheapest way to get an unverifiable
+  report is to stop retrieving.
+
+And one caveat the write-up takes seriously: re-running an *identical*
+configuration moves the pass rate by 10 points at `temperature=0`, so only the
+citation-precision gaps should be read as findings.
 
 ---
 

@@ -127,30 +127,43 @@ and you cannot tell from the output that it happened.
 
 `qwen2.5:7b-instruct`, `react`. This is the number quoted in the README.
 
-| Run | Model | Architecture | n | Pass rate | Score | Steps | Tokens | Cite precision | Cite coverage | Latency (s) |
-|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
-| core | qwen2.5:7b-instruct | react | 20 | 40% | 0.44 | 2.5 | 7,520 | 0.69 | 0.69 | 22.6 |
+| Run | Model | Architecture | n | Pass rate | Score | Steps | Tokens | Cite precision | Cite coverage | Latency (s) | Errors |
+|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| core (before nudge fix) | qwen2.5:7b-instruct | react | 20 | 40% | 0.44 | 2.5 | 7,520 | 0.69 | 0.69 | 22.6 | 4 |
+| **core (current)** | qwen2.5:7b-instruct | react | 20 | **60%** | **0.64** | 2.6 | 7,611 | **0.79** | **0.95** | **18.5** | **0** |
 
-By category:
+The second row is the same command after the one-line change described in
+[Finding 3](#finding-3-a-lost-response-and-a-harness-bug-that-hid-it). Nothing
+else changed — same model, same tasks, same flags. Every metric moved in the
+right direction and the exception count went to zero.
+
+The coverage jump from 0.69 to 0.95 is the one worth pausing on. Coverage
+measures how much of the report is backed by a retrieved source, and it rose by
+26 points because runs no longer died before reaching a validated answer. A
+transport bug was not only losing tasks, it was losing *citations* — the reports
+that did come back were thinner on evidence than they needed to be.
+
+By category, current run:
 
 | Category | n | Passed | Pass rate | Mean score |
 |---|---:|---:|---:|---:|
-| `single_hop` | 10 | 4 | 40% | 0.500 |
-| `multi_hop` | 8 | 3 | 38% | 0.375 |
-| `citation` | 2 | 1 | 50% | 0.413 |
+| `single_hop` | 10 | 6 | 60% | 0.600 |
+| `multi_hop` | 8 | 4 | 50% | 0.563 |
+| `citation` | 2 | 2 | 100% | 1.000 |
 
-Stop reasons across the 20 tasks:
+Stop reasons across the 20 tasks, current run:
 
 | Stop reason | n | Meaning |
 |---|---:|---|
-| `finalized` | 10 | Passed validation. The intended path. |
-| `final_response_without_finalize` | 4 | Answered in prose twice; prose validated anyway and failed. |
-| `exception` | 4 | Transport failure. **Not** a model failure — see Finding 3. |
-| `no_progress_repeated_failure` | 1 | Identical failing call twice; run aborted deliberately. |
-| `finalized_prose` | 1 | Prose fallback that happened to pass validation. |
+| `finalized` | 12 | Passed validation. The intended path. |
+| `finalized_prose` | 3 | Prose fallback that passed validation. |
+| `final_response_without_finalize` | 3 | Answered in prose; prose validated anyway and failed. |
+| `no_progress_repeated_failure` | 2 | Identical failing call twice; run aborted deliberately. |
+| `exception` | **0** | Was 4 before the nudge fix. |
 
-Excluding the 4 transport failures, the pass rate over tasks the agent actually
-reached a decision on is **8/16 = 50%**.
+**Every one of the 20 runs now reaches a citation-validated terminal state or
+aborts deliberately.** There is no longer a third outcome where the run simply
+dies and the failure is attributed to the model.
 
 ---
 
@@ -245,7 +258,7 @@ datasets for multi-hop QA". That is the intended trade: to assert a negative the
 agent has to find a query that returns rows and shows the field is empty, rather
 than one that returns nothing at all. See `test_an_empty_result_cannot_verify_a_claim`.
 
-### Finding 3 - a provider silently discarding tool calls
+### Finding 3 - a lost response, and a harness bug that hid it
 
 Four of the 20 core tasks (20%) ended in `exception`. Every one of them was the
 same message:
@@ -256,34 +269,78 @@ Ollama returned no content and no tool calls after generating 142 tokens
 ```
 
 Before this was detected, all four were recorded as `empty_response` and charged
-to the model. **That misattribution was the actual defect.** The 7B model was
+to the model. **That misattribution was the first defect.** The 7B model was
 paying for a bug in the harness's transport.
 
-How it was found and what was done:
+**The second defect was mine, and I initially blamed Ollama for it.** The first
+thing I concluded was that the fault was upstream — a tool call whose `arguments`
+JSON was malformed, discarded inside Ollama's parser, unfixable from this project.
+That conclusion was wrong, and it survived longer than it should have because it
+explained the symptom neatly.
 
-- Replaying the failing conversation against `/api/chat` with `stream: true`
-  showed Ollama emitting **no deltas at all** — no content, no tool calls, no
-  partial output — while reporting a token count. The tokens were generated and
-  discarded inside Ollama's parser. Deterministic: three retries produced exactly
-  142 tokens each time.
-- The root cause is in Ollama, not in this project. It is consistent with a tool
-  call whose `arguments` JSON is malformed — typically multi-line prose inside a
-  JSON string, which the model's own template is prone to emit. `llama3.1:8b` on
-  the same GPU hit it zero times in 10 tasks.
-- Two genuine interop bugs on the way there are fixed: Ollama's `/v1`
-  OpenAI-compatible shim discards large tool-call arguments outright, and its
-  native `/api/chat` rejects a replayed assistant tool call whose `arguments`
-  are a JSON *string* rather than a decoded object (HTTP 400, `Value looks like
-  object, but can't find closing '}' symbol`). `OllamaClient` now speaks the
-  native endpoint and normalises the argument shape.
+What actually settled it was capturing the failing request instead of reasoning
+about it, then replaying that exact payload:
 
-The general lesson is worth more than the bug: **a harness that cannot tell the
-difference between "the model declined to answer" and "the response was lost" will
-quietly corrupt its own metrics.** Any eval that counts empty responses as model
-failures is partly measuring its own plumbing.
+| Condition | Result |
+|---|---|
+| Replay at `temperature=0`, 3 times | 105 tokens, no output, every time |
+| Replay at `temperature=0.7`, 6 different seeds | 105 tokens, no output, every time |
 
-Not fixed: the underlying Ollama parser loss. It needs an upstream change, or a
-model that emits well-formed tool-call JSON.
+Resampling never escaped it. A flaky decode *must* be escapable by resampling, so
+it was never a flaky decode — it was structural. The captured message roles were
+`system, user, assistant, tool, assistant, user`: the model had answered in prose,
+been nudged toward `finalize`, and then tried to pass its answer as a tool
+argument.
+
+The nudge read:
+
+> Call the `finalize` tool now and pass **that same report** as its `answer`
+> argument.
+
+That instructs the model to copy a multi-paragraph answer verbatim into a JSON
+string inside a tool call. The argument is long and multi-line, and Ollama
+discards the whole call when that JSON does not parse. **My own prompt was
+manufacturing the fault I then attributed to Ollama's parser.**
+
+The nudge now asks for a condensed single-paragraph answer on one line. That keeps
+the argument small, and it is independently better behaviour: the system prompt
+already asks for "5 cited sentences over 20 uncited ones", and the nudge was
+overriding that by demanding the whole report back.
+
+Condensing does not weaken the guarantee. Whatever reaches `finalize` is validated
+by the same validator, and if the model still declines to call the tool, the prose
+is validated in the loop instead. The guarantee never depended on the model
+cooperating with the protocol — only on the validator seeing the final text.
+
+Effect on the same question that previously died at step 2:
+
+```
+There are a total of 6 papers in the local knowledge base. They are from the
+venues NeurIPS (3 papers), ICLR, NAACL, and Spec [Dknowle].
+
+citations: precision=1.00  coverage=0.50  claims=2
+tokens: 4,641  steps: 2  stop: finalized
+```
+
+Two genuine interop bugs were found and fixed on the way: Ollama's `/v1`
+OpenAI-compatible shim discards large tool-call arguments outright, and its native
+`/api/chat` rejects a replayed assistant tool call whose `arguments` are a JSON
+*string* rather than a decoded object (HTTP 400, `Value looks like object, but
+can't find closing '}' symbol`). `OllamaClient` now speaks the native endpoint and
+normalises the argument shape.
+
+Two lessons, and the second is the one I would keep:
+
+- **A harness that cannot tell the difference between "the model declined to
+  answer" and "the response was lost" will quietly corrupt its own metrics.** Any
+  eval that counts empty responses as model failures is partly measuring its own
+  plumbing.
+- **A plausible upstream explanation is not a diagnosis.** "Ollama's parser is
+  broken and I cannot fix it" fit every symptom I had. It was wrong, and the only
+  thing that caught it was capturing the request and replaying it under a
+  condition — resampling — that a broken parser would not be expected to defeat.
+  When a bug is inconvenient to fix, the incentive is to locate it just outside
+  your own code. Test the boundary you are tempted to blame.
 
 ### Finding 4 — two eval expectations were wrong, not two models
 
@@ -358,13 +415,13 @@ Stated plainly, because a table without these is marketing.
    supported by the cited source but *misleadingly framed* by it. It is a
    heuristic, and Finding 2 is what a heuristic gets wrong when it is trusted
    further than it deserves.
-5. **20% of the core run is missing.** Four tasks could not complete for the
-   transport reason in Finding 3. Those are excluded from the 8/16 figure and
-   reported as errors, not as failures.
-6. **Adversarial and refusal categories are under-sampled.** One live injection
-   run and one live refusal run are described above. That is a demonstration
-   that the control fires, not a measurement of how often it fires.
-7. **Offline only.** No web tools, so no measurement of citation quality against
+5. **Adversarial and refusal categories are still unsampled.** The `--limit 20`
+   slice covers `single_hop`, `multi_hop` and two `citation` tasks. Injection
+   and refusal appear nowhere in any measured number in this document. One live
+   injection run is described above and is explicitly a demonstration, not a
+   measurement. Running the remaining 20 tasks is cheap; it has not been done,
+   so those categories should be treated as untested rather than as passing.
+6. **Offline only.** No web tools, so no measurement of citation quality against
    live retrieved pages — which is where a lexical verifier is most likely to be
    generous.
 
@@ -387,6 +444,9 @@ In the order I would actually do them:
    reasoning, it is `WHERE title = '...'` against case-sensitive SQLite. A LIKE
    query or a schema-first step fixes most of the suite, and it is a prompt and
    tool-description change rather than a model change.
-5. **Report the upstream defect upstream.** Finding 3 is reproducible on any
-   Ollama + qwen2.5 setup and should be filed as an Ollama issue with the
-   streaming capture that shows zero deltas.
+5. **Audit the other long-argument tool calls.** Finding 3 was a prompt bug found
+   by measuring which requests fail. Nothing stops the same class of fault
+   appearing in `save_report`, or in any task where the model wants to put
+   substantial text inside a JSON argument. The general rule — *do not ask a
+   small model to inline prose into a tool argument* — is now enforced in one
+   place and asserted in one test, but only for `finalize`.

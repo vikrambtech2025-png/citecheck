@@ -2,41 +2,41 @@
   "label": "core",
   "model": "qwen2.5:7b-instruct",
   "architecture": "react",
-  "started_at": 1790964804.1940377,
+  "started_at": 1790968892.9539452,
   "summary": {
     "n": 20,
-    "passed": 8,
-    "pass_rate": 0.4,
-    "mean_score": 0.4413,
-    "mean_steps": 2.5,
-    "mean_tokens": 7520.15,
-    "mean_latency_s": 22.6115,
-    "mean_wall_s": 73.036,
-    "citation_precision": 0.6875,
-    "citation_coverage": 0.6865625,
+    "passed": 12,
+    "pass_rate": 0.6,
+    "mean_score": 0.6416666666666667,
+    "mean_steps": 2.6,
+    "mean_tokens": 7611.3,
+    "mean_latency_s": 18.522,
+    "mean_wall_s": 29.579500000000003,
+    "citation_precision": 0.7894736842105263,
+    "citation_coverage": 0.9473684210526315,
     "runs_with_guardrail_events": 0,
     "budget_exhausted": 0,
     "model_errors": 0,
-    "exceptions": 4
+    "exceptions": 0
   },
   "by_category": {
     "citation": {
       "n": 2,
-      "passed": 1,
-      "pass_rate": 0.5,
-      "mean_score": 0.41300000000000003
+      "passed": 2,
+      "pass_rate": 1.0,
+      "mean_score": 1.0
     },
     "multi_hop": {
       "n": 8,
-      "passed": 3,
-      "pass_rate": 0.375,
-      "mean_score": 0.375
+      "passed": 4,
+      "pass_rate": 0.5,
+      "mean_score": 0.5416666666666666
     },
     "single_hop": {
       "n": 10,
-      "passed": 4,
-      "pass_rate": 0.4,
-      "mean_score": 0.5
+      "passed": 6,
+      "pass_rate": 0.6,
+      "mean_score": 0.65
     }
   },
   "outcomes": [
@@ -47,38 +47,41 @@
       "prompt": "In which year and at which venue was the Transformer paper published? Use the local knowledge base.",
       "grade": {
         "passed": false,
-        "score": 0.0,
+        "score": 0.5,
         "grader": "contains",
-        "detail": "0/2 expected strings found",
+        "detail": "1/2 expected strings found",
         "metrics": {
-          "hits": 0,
+          "hits": 1,
           "expected": 2,
           "has_citations": true
         },
-        "failure_reason": "missing expected content: ['2017', 'neurips']"
+        "failure_reason": "missing expected content: ['neurips']"
       },
-      "stop_reason": "final_response_without_finalize",
-      "steps": 4,
-      "tokens": 10689,
-      "latency_s": 33.92,
-      "wall_s": 51.37,
+      "stop_reason": "finalized_prose",
+      "steps": 3,
+      "tokens": 12984,
+      "latency_s": 20.32,
+      "wall_s": 42.88,
       "sources": [
-        "Dknowle"
+        "Dknowle",
+        "S6bed037a"
       ],
       "validation": {
-        "ok": false,
-        "coverage": 0.333,
-        "precision": 0.0,
-        "claims_checked": 3,
+        "ok": true,
+        "coverage": 0.5,
+        "precision": 1.0,
+        "claims_checked": 2,
         "used_sources": [
+          "S6bed037a"
+        ],
+        "unused_sources": [
           "Dknowle"
         ],
-        "unused_sources": [],
         "issues": [
           {
-            "kind": "no_evidence",
-            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: I will run the query again to find the publication year and venue of the Transformer paper ....",
-            "severity": "error"
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
           }
         ]
       },
@@ -92,25 +95,25 @@
       "grader": "contains",
       "prompt": "Who are the listed authors of the RAG paper in the knowledge base?",
       "grade": {
-        "passed": false,
-        "score": 0.0,
+        "passed": true,
+        "score": 1.0,
         "grader": "contains",
-        "detail": "0/1 expected strings found",
+        "detail": "1/1 expected strings found",
         "metrics": {
-          "hits": 0,
+          "hits": 1,
           "expected": 1,
           "has_citations": true
         },
-        "failure_reason": "missing expected content: ['lewis']"
+        "failure_reason": null
       },
-      "stop_reason": "finalized",
+      "stop_reason": "finalized_prose",
       "steps": 4,
-      "tokens": 17091,
-      "latency_s": 32.6,
-      "wall_s": 51.96,
+      "tokens": 15321,
+      "latency_s": 30.66,
+      "wall_s": 55.64,
       "sources": [
         "Dknowle",
-        "Sc7a865b5"
+        "Sd95092de"
       ],
       "validation": {
         "ok": true,
@@ -118,7 +121,7 @@
         "precision": 1.0,
         "claims_checked": 1,
         "used_sources": [
-          "Sc7a865b5"
+          "Sd95092de"
         ],
         "unused_sources": [
           "Dknowle"
@@ -141,23 +144,39 @@
       "grader": "contains",
       "prompt": "List every paper in the knowledge base published in 2023.",
       "grade": {
-        "passed": false,
-        "score": 0.0,
+        "passed": true,
+        "score": 1.0,
         "grader": "contains",
-        "detail": "",
-        "metrics": {},
-        "failure_reason": "error: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 142 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+        "detail": "2/2 expected strings found",
+        "metrics": {
+          "hits": 2,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": null
       },
-      "stop_reason": "exception",
-      "steps": 0,
-      "tokens": 0,
-      "latency_s": 0.0,
-      "wall_s": 59.45,
-      "sources": [],
-      "validation": null,
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 5055,
+      "latency_s": 14.82,
+      "wall_s": 26.15,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
       "injection_flags": 0,
       "denied_calls": 0,
-      "error": "ModelError: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 142 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+      "error": null
     },
     {
       "task_id": "sh04",
@@ -178,9 +197,9 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4380,
-      "latency_s": 11.45,
-      "wall_s": 16.21,
+      "tokens": 4414,
+      "latency_s": 10.94,
+      "wall_s": 15.65,
       "sources": [
         "Dknowle"
       ],
@@ -218,9 +237,9 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4341,
-      "latency_s": 11.4,
-      "wall_s": 16.47,
+      "tokens": 4375,
+      "latency_s": 10.9,
+      "wall_s": 16.01,
       "sources": [
         "Dknowle"
       ],
@@ -258,9 +277,9 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4224,
-      "latency_s": 9.57,
-      "wall_s": 13.12,
+      "tokens": 4258,
+      "latency_s": 9.0,
+      "wall_s": 12.62,
       "sources": [
         "Dknowle"
       ],
@@ -288,39 +307,42 @@
         "passed": false,
         "score": 0.0,
         "grader": "contains",
-        "detail": "0/1 expected strings found",
-        "metrics": {
-          "hits": 0,
-          "expected": 1,
-          "has_citations": true
-        },
-        "failure_reason": "missing expected content: ['naacl']"
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "no_answer"
       },
-      "stop_reason": "finalized",
-      "steps": 5,
-      "tokens": 23404,
-      "latency_s": 57.96,
-      "wall_s": 74.2,
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 4,
+      "tokens": 8249,
+      "latency_s": 25.03,
+      "wall_s": 33.38,
       "sources": [
-        "Dknowle",
-        "S7588baae"
+        "Dknowle"
       ],
       "validation": {
-        "ok": true,
+        "ok": false,
         "coverage": 1.0,
-        "precision": 1.0,
-        "claims_checked": 2,
-        "used_sources": [
-          "S7588baae"
-        ],
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [],
         "unused_sources": [
           "Dknowle"
         ],
         "issues": [
           {
+            "kind": "unknown_source",
+            "detail": "cited [S1a2b3c4d] was never fetched; available: ['Dknowle']",
+            "severity": "error"
+          },
+          {
             "kind": "unused_source",
             "detail": "fetched [Dknowle] but never cited",
             "severity": "warning"
+          },
+          {
+            "kind": "unsupported_claim",
+            "detail": "claim not supported by cited source(s) [] (score 0.00 < 0.34): The venue of the BERT paper is ACL Anthology ....",
+            "severity": "error"
           }
         ]
       },
@@ -334,42 +356,39 @@
       "grader": "contains",
       "prompt": "Name the datasets in the knowledge base that are for multi-hop question answering.",
       "grade": {
-        "passed": true,
-        "score": 1.0,
+        "passed": false,
+        "score": 0.0,
         "grader": "contains",
-        "detail": "1/1 expected strings found",
+        "detail": "0/1 expected strings found",
         "metrics": {
-          "hits": 1,
+          "hits": 0,
           "expected": 1,
           "has_citations": true
         },
-        "failure_reason": null
+        "failure_reason": "missing expected content: ['hotpotqa']"
       },
-      "stop_reason": "finalized",
-      "steps": 5,
-      "tokens": 10981,
-      "latency_s": 42.71,
-      "wall_s": 50.37,
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 6053,
+      "latency_s": 9.98,
+      "wall_s": 17.9,
       "sources": [
-        "Dknowle",
-        "S28f0da98"
+        "Dknowle"
       ],
       "validation": {
-        "ok": true,
-        "coverage": 0.5,
-        "precision": 1.0,
-        "claims_checked": 2,
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
         "used_sources": [
-          "S28f0da98"
-        ],
-        "unused_sources": [
           "Dknowle"
         ],
+        "unused_sources": [],
         "issues": [
           {
-            "kind": "unused_source",
-            "detail": "fetched [Dknowle] but never cited",
-            "severity": "warning"
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: I found no datasets in the knowledge base that are specifically for multi-hop question answering ....",
+            "severity": "error"
           }
         ]
       },
@@ -383,49 +402,42 @@
       "grader": "contains",
       "prompt": "Which paper in the knowledge base introduced the MCP specification?",
       "grade": {
-        "passed": false,
+        "passed": true,
         "score": 1.0,
         "grader": "contains",
         "detail": "1/1 expected strings found",
         "metrics": {
           "hits": 1,
           "expected": 1,
-          "has_citations": false
+          "has_citations": true
         },
-        "failure_reason": "no citation markers in answer"
+        "failure_reason": null
       },
-      "stop_reason": "final_response_without_finalize",
+      "stop_reason": "finalized_prose",
       "steps": 3,
-      "tokens": 8248,
-      "latency_s": 20.6,
-      "wall_s": 36.53,
+      "tokens": 14279,
+      "latency_s": 24.41,
+      "wall_s": 43.67,
       "sources": [
-        "Dknowle"
+        "Dknowle",
+        "S6cde2abb"
       ],
       "validation": {
-        "ok": false,
-        "coverage": 0.0,
-        "precision": 0.0,
-        "claims_checked": 4,
-        "used_sources": [],
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "S6cde2abb"
+        ],
         "unused_sources": [
           "Dknowle"
         ],
         "issues": [
           {
-            "kind": "no_citations",
-            "detail": "the answer contains no [SourceId] citation markers",
-            "severity": "error"
-          },
-          {
             "kind": "unused_source",
             "detail": "fetched [Dknowle] but never cited",
             "severity": "warning"
-          },
-          {
-            "kind": "no_cited_claims",
-            "detail": "no substantive claim carries a citation",
-            "severity": "error"
           }
         ]
       },
@@ -452,56 +464,9 @@
       },
       "stop_reason": "final_response_without_finalize",
       "steps": 2,
-      "tokens": 6167,
-      "latency_s": 11.51,
-      "wall_s": 25.48,
-      "sources": [
-        "Dknowle"
-      ],
-      "validation": {
-        "ok": false,
-        "coverage": 0.5,
-        "precision": 0.0,
-        "claims_checked": 4,
-        "used_sources": [
-          "Dknowle"
-        ],
-        "unused_sources": [],
-        "issues": [
-          {
-            "kind": "no_evidence",
-            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: I was unable to find the abstract for the paper titled \"ReAct: Combining Language Models and the World via the...",
-            "severity": "error"
-          },
-          {
-            "kind": "no_evidence",
-            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: Would you like to know more about the paper's details such as its authors, year, or venue?...",
-            "severity": "error"
-          }
-        ]
-      },
-      "injection_flags": 0,
-      "denied_calls": 0,
-      "error": null
-    },
-    {
-      "task_id": "mh01",
-      "category": "multi_hop",
-      "grader": "contains",
-      "prompt": "Using the knowledge base, list the papers from 2020 or later that are about tool use or retrieval, and state each one's venue.",
-      "grade": {
-        "passed": false,
-        "score": 0.0,
-        "grader": "contains",
-        "detail": "",
-        "metrics": {},
-        "failure_reason": "no_answer"
-      },
-      "stop_reason": "no_progress_repeated_failure",
-      "steps": 6,
-      "tokens": 13570,
-      "latency_s": 52.43,
-      "wall_s": 59.56,
+      "tokens": 6188,
+      "latency_s": 11.61,
+      "wall_s": 21.28,
       "sources": [
         "Dknowle"
       ],
@@ -517,7 +482,53 @@
         "issues": [
           {
             "kind": "no_evidence",
-            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: Based on the query to the knowledge base, no papers from 2020 or later that specifically mention 'tool use' or...",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: The abstract for the paper titled 'ReAct: Combining Language Models and the World via the Agent' is not availa...",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "mh01",
+      "category": "multi_hop",
+      "grader": "contains",
+      "prompt": "Using the knowledge base, list the papers from 2020 or later that are about tool use or retrieval, and state each one's venue.",
+      "grade": {
+        "passed": false,
+        "score": 0.333,
+        "grader": "contains",
+        "detail": "1/3 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 3,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['neurips', 'iclr']"
+      },
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 6460,
+      "latency_s": 12.42,
+      "wall_s": 25.03,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": [
+          {
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: Based on the query to the knowledge base, there are no papers from 2020 or later that specifically mention \"to...",
             "severity": "error"
           }
         ]
@@ -545,9 +556,9 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4411,
-      "latency_s": 11.96,
-      "wall_s": 17.07,
+      "tokens": 4445,
+      "latency_s": 11.36,
+      "wall_s": 16.36,
       "sources": [
         "Dknowle"
       ],
@@ -575,20 +586,36 @@
         "passed": false,
         "score": 0.0,
         "grader": "contains",
-        "detail": "",
-        "metrics": {},
-        "failure_reason": "error: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 155 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+        "detail": "0/2 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['mit', 'cc-by']"
       },
-      "stop_reason": "exception",
-      "steps": 0,
-      "tokens": 0,
-      "latency_s": 0.0,
-      "wall_s": 65.02,
-      "sources": [],
-      "validation": null,
+      "stop_reason": "finalized",
+      "steps": 3,
+      "tokens": 7095,
+      "latency_s": 16.43,
+      "wall_s": 34.96,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
       "injection_flags": 0,
       "denied_calls": 0,
-      "error": "ModelError: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 155 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+      "error": null
     },
     {
       "task_id": "mh04",
@@ -609,17 +636,17 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4616,
-      "latency_s": 14.22,
-      "wall_s": 21.93,
+      "tokens": 4613,
+      "latency_s": 12.29,
+      "wall_s": 19.42,
       "sources": [
         "Dknowle"
       ],
       "validation": {
         "ok": true,
-        "coverage": 0.5,
+        "coverage": 1.0,
         "precision": 1.0,
-        "claims_checked": 2,
+        "claims_checked": 1,
         "used_sources": [
           "Dknowle"
         ],
@@ -636,22 +663,22 @@
       "grader": "contains",
       "prompt": "Count how many papers in the knowledge base were published at NeurIPS, and name them.",
       "grade": {
-        "passed": false,
-        "score": 0.0,
+        "passed": true,
+        "score": 1.0,
         "grader": "contains",
-        "detail": "0/1 expected strings found",
+        "detail": "3/3 expected strings found",
         "metrics": {
-          "hits": 0,
-          "expected": 1,
+          "hits": 3,
+          "expected": 3,
           "has_citations": true
         },
-        "failure_reason": "missing expected content: ['2']"
+        "failure_reason": null
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4564,
-      "latency_s": 13.45,
-      "wall_s": 20.57,
+      "tokens": 4598,
+      "latency_s": 13.07,
+      "wall_s": 20.2,
       "sources": [
         "Dknowle"
       ],
@@ -681,18 +708,20 @@
         "grader": "contains",
         "detail": "",
         "metrics": {},
-        "failure_reason": "error: model call failed after 3 attempts: Ollama call failed: timed out"
+        "failure_reason": "no_answer"
       },
-      "stop_reason": "exception",
-      "steps": 0,
-      "tokens": 0,
-      "latency_s": 0.0,
-      "wall_s": 468.51,
-      "sources": [],
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 4,
+      "tokens": 7068,
+      "latency_s": 40.64,
+      "wall_s": 41.98,
+      "sources": [
+        "Dknowle"
+      ],
       "validation": null,
       "injection_flags": 0,
       "denied_calls": 0,
-      "error": "ModelError: model call failed after 3 attempts: Ollama call failed: timed out"
+      "error": null
     },
     {
       "task_id": "mh07",
@@ -713,9 +742,9 @@
       },
       "stop_reason": "finalized",
       "steps": 2,
-      "tokens": 4325,
-      "latency_s": 10.61,
-      "wall_s": 14.82,
+      "tokens": 4359,
+      "latency_s": 10.02,
+      "wall_s": 14.15,
       "sources": [
         "Dknowle"
       ],
@@ -743,20 +772,36 @@
         "passed": false,
         "score": 0.0,
         "grader": "contains",
-        "detail": "",
-        "metrics": {},
-        "failure_reason": "error: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 134 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+        "detail": "0/2 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['2019', '2020']"
       },
-      "stop_reason": "exception",
-      "steps": 0,
-      "tokens": 0,
-      "latency_s": 0.0,
-      "wall_s": 58.82,
-      "sources": [],
-      "validation": null,
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 4932,
+      "latency_s": 18.73,
+      "wall_s": 29.94,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 3,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
       "injection_flags": 0,
       "denied_calls": 0,
-      "error": "ModelError: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 134 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+      "error": null
     },
     {
       "task_id": "ci01",
@@ -765,33 +810,33 @@
       "prompt": "State the year, venue, and core contribution of the ReAct paper using the knowledge base. Cite every claim.",
       "grade": {
         "passed": true,
-        "score": 0.826,
+        "score": 1.0,
         "grader": "citation",
-        "detail": "validation ok=True precision=1.00 coverage=0.65",
+        "detail": "validation ok=True precision=1.00 coverage=1.00",
         "metrics": {
           "precision": 1.0,
-          "coverage": 0.652,
-          "claims_checked": 23,
-          "stop_reason": "finalized_prose"
+          "coverage": 1.0,
+          "claims_checked": 2,
+          "stop_reason": "finalized"
         },
         "failure_reason": null
       },
-      "stop_reason": "finalized_prose",
+      "stop_reason": "finalized",
       "steps": 4,
-      "tokens": 18035,
-      "latency_s": 89.49,
-      "wall_s": 270.78,
+      "tokens": 20208,
+      "latency_s": 39.77,
+      "wall_s": 65.86,
       "sources": [
         "Dknowle",
-        "S95e1ade0"
+        "S0c672eba"
       ],
       "validation": {
         "ok": true,
-        "coverage": 0.652,
+        "coverage": 1.0,
         "precision": 1.0,
-        "claims_checked": 23,
+        "claims_checked": 2,
         "used_sources": [
-          "S95e1ade0"
+          "S0c672eba"
         ],
         "unused_sources": [
           "Dknowle"
@@ -814,54 +859,36 @@
       "grader": "citation",
       "prompt": "List three papers from the knowledge base with their venues, citing each entry separately.",
       "grade": {
-        "passed": false,
-        "score": 0.0,
+        "passed": true,
+        "score": 1.0,
         "grader": "citation",
-        "detail": "validation ok=False precision=0.00 coverage=0.00",
+        "detail": "validation ok=True precision=1.00 coverage=1.00",
         "metrics": {
-          "precision": 0.0,
-          "coverage": 0.0,
-          "claims_checked": 0,
-          "stop_reason": "final_response_without_finalize"
+          "precision": 1.0,
+          "coverage": 1.0,
+          "claims_checked": 3,
+          "stop_reason": "finalized"
         },
-        "failure_reason": "citation validation failed"
+        "failure_reason": null
       },
-      "stop_reason": "final_response_without_finalize",
+      "stop_reason": "finalized",
       "steps": 3,
-      "tokens": 11357,
-      "latency_s": 28.35,
-      "wall_s": 68.48,
+      "tokens": 7272,
+      "latency_s": 28.04,
+      "wall_s": 38.51,
       "sources": [
-        "Dknowle",
-        "Sda1d5d4d"
+        "Dknowle"
       ],
       "validation": {
-        "ok": false,
-        "coverage": 0.0,
-        "precision": 0.0,
-        "claims_checked": 0,
-        "used_sources": [],
-        "unused_sources": [
-          "Dknowle",
-          "Sda1d5d4d"
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 3,
+        "used_sources": [
+          "Dknowle"
         ],
-        "issues": [
-          {
-            "kind": "no_citations",
-            "detail": "the answer contains no [SourceId] citation markers",
-            "severity": "error"
-          },
-          {
-            "kind": "unused_source",
-            "detail": "fetched [Dknowle] but never cited",
-            "severity": "warning"
-          },
-          {
-            "kind": "unused_source",
-            "detail": "fetched [Sda1d5d4d] but never cited",
-            "severity": "warning"
-          }
-        ]
+        "unused_sources": [],
+        "issues": []
       },
       "injection_flags": 0,
       "denied_calls": 0,
