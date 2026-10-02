@@ -1,0 +1,1 @@
+"""Structural guardrails: citation validation and prompt-injection handling."""

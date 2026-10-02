@@ -1,0 +1,47 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# --- Tooling caches ---
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# --- Secrets / local config ---
+.env
+.env.local
+
+# --- Runtime artifacts ---
+.dbg/
+workspace/
+!workspace/.gitkeep
+outbox/
+!outbox/.gitkeep
+runs/
+results/
+*.sqlite3
+*.db
+*.log
+*.log.err
+
+# --- Langfuse / local stack ---
+langfuse-data/
+docker-volumes/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# --- Models: never commit weights ---
+*.gguf
+*.safetensors

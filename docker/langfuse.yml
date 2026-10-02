@@ -1,0 +1,73 @@
+# Self-hosted Langfuse for local tracing.
+#
+#   docker compose -f docker/langfuse.yml up -d
+#   # UI:      http://127.0.0.1:3000
+#   # then:    CITECHECK_TRACING_BACKEND=langfuse
+#   #          CITECHECK_LANGFUSE_PUBLIC_KEY=pk-lf-...
+#   #          CITECHECK_LANGFUSE_SECRET_KEY=sk-lf-...
+#
+# This exists because the tracing story should be runnable for free and offline.
+# Langfuse is the one backend that gives span-level visibility into a multi-step
+# tool loop without a paid account; everything else in this project works with
+# tracing switched off entirely (the default), so this file is a convenience, not
+# a dependency.
+
+name: citecheck-tracing
+
+services:
+  langfuse-web:
+    image: langfuse/langfuse:2
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      LANGFUSE_HOST: http://langfuse-web:3000
+      LANGFUSE_PORT: "3000"
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-local}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-local}
+      LANGFUSE_TELEMETRY_ENABLED: "false"
+      LANGFUSE_SALT: ${LANGFUSE_SALT:-changeme-salt}
+      LANGFUSE_SECRET_ENCRYPTION_KEY: ${LANGFUSE_SECRET_ENCRYPTION_KEY:-00000000000000000000000000000000}
+      # Everything local: no outbound calls, no telemetry.
+      DISABLE_TELEMETRY: "true"
+    depends_on:
+      langfuse-worker:
+        condition: service_healthy
+    volumes:
+      - langfuse-data:/var/lib/langfuse
+
+  langfuse-worker:
+    image: langfuse/langfuse-worker:2
+    restart: unless-stopped
+    environment:
+      LANGFUSE_HOST: http://langfuse-web:3000
+      LANGFUSE_PUBLIC_KEY: ${LANGFUSE_PUBLIC_KEY:-pk-lf-local}
+      LANGFUSE_SECRET_KEY: ${LANGFUSE_SECRET_KEY:-sk-lf-local}
+      LANGFUSE_SALT: ${LANGFUSE_SALT:-changeme-salt}
+      LANGFUSE_SECRET_ENCRYPTION_KEY: ${LANGFUSE_SECRET_ENCRYPTION_KEY:-00000000000000000000000000000000}
+      DISABLE_TELEMETRY: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - langfuse-data:/var/lib/langfuse
+
+  postgres:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    healthcheck:
+      # Without this the worker races the database and crash-loops on boot.
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse-pg:/var/lib/postgresql/data
+
+volumes:
+  langfuse-data:
+  langfuse-pg:
