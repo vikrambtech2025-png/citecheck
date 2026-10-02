@@ -163,7 +163,10 @@ MULTI_HOP = [
         prompt="Count how many papers in the knowledge base were published at NeurIPS, and "
                 "name them.",
         grader="contains",
-        expect_contains=["2"],
+        # 3, not 2: this expectation was written against an earlier draft of the
+        # seed data and had been failing a correct answer ever since. Kept in step
+        # with `test_seeded_facts_match_the_eval_expectations`.
+        expect_contains=["3", "attention is all you need", "toolformer"],
     ),
     Task(
         id="mh06", category="multi_hop",

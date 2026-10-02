@@ -250,6 +250,7 @@ def validate(
         best = 0.0
         grounded = False
         hostile_only = False
+        empty_only = False
         for sid in ids:
             src = sources.get(sid)
             if src is None:
@@ -257,6 +258,15 @@ def validate(
             if sid in blocked:
                 # Counted as cited, never as support.
                 hostile_only = True
+                continue
+            if src.kind in STRUCTURED_KINDS and src.row_count == 0:
+                # A query that matched no rows is the absence of evidence, and
+                # its text is dominated by the statement the model itself wrote.
+                # Counting it as support lets a model verify a guess: it invents
+                # a paper title, the SQL echoes that title back, and the claim
+                # "no such paper exists" scores 0.54 against its own query.
+                # Real finding of a live run.
+                empty_only = True
                 continue
             score = lexical_support(claim, src.text)
             best = max(best, score)
@@ -279,6 +289,13 @@ def validate(
                 f"{[i for i in ids if i in blocked]}, which tripped the "
                 f"prompt-injection scanner and cannot verify a finding: "
                 f"{claim[:110]}...",
+            )
+        elif empty_only:
+            report.add(
+                "no_evidence",
+                f"claim rests only on query result(s) that returned zero rows, "
+                f"which is an absence of evidence rather than a finding "
+                f"{[i for i in ids if i in sources]}: {claim[:110]}...",
             )
         else:
             report.add(

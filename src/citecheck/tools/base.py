@@ -44,6 +44,10 @@ class Source:
     text: str
     kind: str  # "web" | "file" | "db"
     content_hash: str
+    #: Rows returned by a structured query, when the source is one. `0` means the
+    #: query found nothing, which is *not* evidence for anything -- see
+    #: `citations.validate`.
+    row_count: int | None = None
 
     def excerpt(self, limit: int = 400) -> str:
         flat = " ".join(self.text.split())

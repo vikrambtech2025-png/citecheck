@@ -175,7 +175,7 @@ def init_demo_db(db_path: Path) -> Path:
             """
             CREATE TABLE IF NOT EXISTS papers (
                 id INTEGER PRIMARY KEY,
-                title TEXT NOT NULL,
+                title TEXT NOT NULL UNIQUE,
                 authors TEXT NOT NULL,
                 year INTEGER NOT NULL,
                 venue TEXT,
@@ -189,28 +189,45 @@ def init_demo_db(db_path: Path) -> Path:
             );
             """
         )
+        papers = [
+            ("Attention Is All You Need",
+             "Vaswani et al.", 2017, "NeurIPS",
+             "Introduces the Transformer, dispensing with recurrence and convolutions."),
+            ("BERT: Pre-training of Deep Bidirectional Transformers",
+             "Devlin et al.", 2019, "NAACL",
+             "Bidirectional pre-training for language representation understanding."),
+            ("Retrieval-Augmented Generation for Knowledge-Intensive NLP",
+             "Lewis et al.", 2020, "NeurIPS",
+             "Combines parametric and non-parametric memory; improves factuality on open QA."),
+            ("ReAct: Synergizing Reasoning and Acting in Language Models",
+             "Yao et al.", 2023, "ICLR",
+             "Interleaves reasoning traces and task actions so agents use external tools."),
+            ("Toolformer: Language Models Can Teach Themselves to Use Tools",
+             "Schick et al.", 2023, "NeurIPS",
+             "Self-supervised method for teaching an LM when to call APIs."),
+            ("Model Context Protocol",
+             "Anthropic", 2024, "Spec",
+             "Open protocol exposing tools and resources to LLM applications."),
+        ]
+
+        # `INSERT OR IGNORE` is only as idempotent as the constraints behind it.
+        # `papers.title` had no UNIQUE index, so `OR IGNORE` had nothing to ignore
+        # against and every `citecheck init` silently appended a second copy of
+        # every paper. `COUNT(*)` then reported 12 for a 6-paper database, and the
+        # agent was graded -- correctly -- against a knowledge base that lied.
+        # Guarding on existence works regardless of the table's constraints, so
+        # re-initialising is now safe even for a database already corrupted this
+        # way.
         conn.executemany(
-            "INSERT OR IGNORE INTO papers (title, authors, year, venue, abstract) VALUES (?,?,?,?,?)",
-            [
-                ("Attention Is All You Need",
-                 "Vaswani et al.", 2017, "NeurIPS",
-                 "Introduces the Transformer, dispensing with recurrence and convolutions."),
-                ("BERT: Pre-training of Deep Bidirectional Transformers",
-                 "Devlin et al.", 2019, "NAACL",
-                 "Bidirectional pre-training for language representation understanding."),
-                ("Retrieval-Augmented Generation for Knowledge-Intensive NLP",
-                 "Lewis et al.", 2020, "NeurIPS",
-                 "Combines parametric and non-parametric memory; improves factuality on open QA."),
-                ("ReAct: Synergizing Reasoning and Acting in Language Models",
-                 "Yao et al.", 2023, "ICLR",
-                 "Interleaves reasoning traces and task actions so agents use external tools."),
-                ("Toolformer: Language Models Can Teach Themselves to Use Tools",
-                 "Schick et al.", 2023, "NeurIPS",
-                 "Self-supervised method for teaching an LM when to call APIs."),
-                ("Model Context Protocol",
-                 "Anthropic", 2024, "Spec",
-                 "Open protocol exposing tools and resources to LLM applications."),
-            ],
+            "INSERT INTO papers (title, authors, year, venue, abstract) "
+            "SELECT ?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM papers WHERE title = ?)",
+            [(*p, p[0]) for p in papers],
+        )
+
+        # Heal databases that were already doubled, keeping the lowest id per
+        # title so `citecheck init` is a repair as well as a seed.
+        conn.execute(
+            "DELETE FROM papers WHERE id NOT IN (SELECT MIN(id) FROM papers GROUP BY title)"
         )
         conn.executemany(
             "INSERT OR IGNORE INTO datasets (name, domain, size_mb, license) VALUES (?,?,?,?)",

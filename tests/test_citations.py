@@ -130,6 +130,96 @@ def test_reference_table_renders_every_passed_source() -> None:
 
 
 # --------------------------------------------------------------------------
+# empty query results: an absence of evidence is not evidence
+# --------------------------------------------------------------------------
+EMPTY_SQL = (
+    "SELECT abstract FROM papers WHERE title = "
+    "'ReAct: Combining Language Models and the World via the Agent'"
+)
+
+
+def _empty_db_source() -> Source:
+    """A query that matched nothing, recorded exactly as the tool emits it."""
+    src = make_source("Dknowle", f"{EMPTY_SQL}\nabstract\n",
+                      uri="sqlite://knowledge.sqlite3", kind="db")
+    src.row_count = 0
+    return src
+
+
+def test_an_empty_result_cannot_verify_a_claim() -> None:
+    """Regression from the eval run.
+
+    The model guessed a paper title, the query matched zero rows, and it then
+    reported "the abstract is not available in the database [Dknowle]". The
+    recorded source text is dominated by the statement the model itself wrote,
+    which echoes that guessed title back -- so the claim scored 0.54 and was
+    certified as verified. The agent was marking its own guess.
+    """
+    src = _empty_db_source()
+    # The precondition: lexical overlap alone would happily accept this.
+    assert citations.lexical_support(
+        "The abstract for ReAct: Combining Language Models and the World via "
+        "the Agent is not available in the database",
+        src.text,
+    ) >= citations.SUPPORT_THRESHOLD
+
+    report = citations.validate(
+        "The abstract for ReAct: Combining Language Models and the World via "
+        "the Agent is not available in the database [Dknowle].",
+        [src],
+    )
+    assert not report.ok
+    assert report.precision == 0.0
+    assert [i["kind"] for i in report.to_dict()["issues"]] == ["no_evidence"]
+
+
+def test_a_non_empty_result_still_verifies() -> None:
+    src = make_source("Dknowle", "SELECT abstract FROM papers\nabstract\n"
+                                 "Interleaves reasoning traces and task actions.",
+                       uri="sqlite://knowledge.sqlite3", kind="db")
+    src.row_count = 1
+    report = citations.validate(
+        "It interleaves reasoning traces and task actions [Dknowle].", [src]
+    )
+    assert report.ok, report.render()
+
+
+def test_a_populated_result_is_unaffected_when_row_count_is_unknown() -> None:
+    """`row_count is None` means unrecorded, not empty. Web and file sources
+    carry no row count and must keep validating exactly as before."""
+    src = make_source("Sabc1234", "The Transformer was introduced in 2017.")
+    assert src.row_count is None
+    assert citations.validate(
+        "The Transformer was introduced in 2017 [Sabc1234].", [src]
+    ).ok
+
+
+def test_an_empty_web_page_is_not_treated_as_a_structured_empty_result() -> None:
+    """`row_count` only means something for a structured query result.
+
+    A web fetch has no rows, so the rule must not fire on it -- otherwise every
+    page with no extractable text would silently become unverifiable rather
+    than simply unsupported.
+    """
+    src = make_source("Sabc1234", "", uri="https://example.com/empty")
+    src.row_count = 0
+    report = citations.validate("Anything at all [Sabc1234].", [src])
+    kinds = [i["kind"] for i in report.to_dict()["issues"]]
+    assert "no_evidence" not in kinds
+    assert kinds == ["unsupported_claim"]
+
+
+def test_numeric_grounding_does_not_rescue_an_empty_result() -> None:
+    """The structured relaxation must not become a loophole past no_evidence."""
+    src = make_source("Dknowle", "SELECT COUNT(*) FROM papers\nCOUNT(*)\n0",
+                       uri="sqlite://knowledge.sqlite3", kind="db")
+    src.row_count = 0
+    report = citations.validate("There are 0 papers in the knowledge base [Dknowle].",
+                                [src])
+    assert not report.ok
+
+
+# --------------------------------------------------------------------------
 # tokenisation: numbers are the highest-signal grounding evidence
 # --------------------------------------------------------------------------
 def test_content_tokens_keep_short_numbers() -> None:

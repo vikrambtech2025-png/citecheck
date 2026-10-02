@@ -86,10 +86,88 @@ def _db(tmp_path: Path) -> Path:
     return init_demo_db(tmp_path / "kb.sqlite3")
 
 
+def test_query_sqlite_records_the_row_count_on_the_source(seeded) -> None:
+    """An empty result is the absence of evidence, and must be markable as such."""
+    from citecheck.tools.base import ToolContext
+    from citecheck.tools.knowledge import query_sqlite
+
+    ctx = ToolContext(settings=seeded, run_id="test")
+    hit = query_sqlite("SELECT title FROM papers LIMIT 1", ctx)
+    assert hit.source is not None and hit.source.row_count == 1
+
+    miss = query_sqlite("SELECT title FROM papers WHERE title = 'nope'", ctx)
+    assert miss.source is not None and miss.source.row_count == 0
+
+
 def test_select_is_allowed(tmp_path: Path) -> None:
     result = sql_guard.run_query(_db(tmp_path), "SELECT title FROM papers", max_rows=10)
     assert result["row_count"] == 6
     assert result["columns"] == ["title"]
+
+
+def _count(db: Path, table: str) -> int:
+    return int(sql_guard.run_query(db, f"SELECT COUNT(*) FROM {table}", max_rows=1)["rows"][0]["COUNT(*)"])
+
+
+def test_init_demo_db_is_idempotent(tmp_path: Path) -> None:
+    """Re-initialising must not append a second copy of every row.
+
+    Regression found by the eval: `papers.title` carried no UNIQUE constraint,
+    so `INSERT OR IGNORE` had nothing to ignore against and every `citecheck
+    init` appended six more rows. `COUNT(*)` then reported 12 for a 6-paper
+    database, and the agent was graded -- correctly, against the evidence it
+    was shown -- for answering 12. The citation guarantee was working perfectly
+    on a knowledge base that lied.
+    """
+    from citecheck.tools.sql_guard import init_demo_db
+
+    db = tmp_path / "kb.sqlite3"
+    for _ in range(4):
+        init_demo_db(db)
+    assert _count(db, "papers") == 6
+    assert _count(db, "datasets") == 4
+
+
+def test_init_demo_db_heals_a_database_the_old_seeder_duplicated(
+    tmp_path: Path,
+) -> None:
+    """A legacy database with no UNIQUE constraint is repaired, not compounded."""
+    import sqlite3
+
+    from citecheck.tools.sql_guard import init_demo_db
+
+    db = tmp_path / "kb.sqlite3"
+    conn = sqlite3.connect(db)
+    # Exactly the pre-fix schema, so the new seeder meets a legacy database.
+    conn.executescript(
+        """
+        CREATE TABLE papers (
+            id INTEGER PRIMARY KEY, title TEXT NOT NULL, authors TEXT NOT NULL,
+            year INTEGER NOT NULL, venue TEXT, abstract TEXT
+        );
+        CREATE TABLE datasets (
+            name TEXT PRIMARY KEY, domain TEXT NOT NULL,
+            size_mb INTEGER, license TEXT
+        );
+        """
+    )
+    conn.commit()
+    conn.close()
+
+    init_demo_db(db)
+    assert _count(db, "papers") == 6
+    # Reproduce the corruption the old seeder caused: six more rows, no UNIQUE.
+    conn = sqlite3.connect(db)
+    conn.execute("INSERT INTO papers (title, authors, year, venue, abstract) "
+                 "SELECT title, authors, year, venue, abstract FROM papers")
+    conn.commit()
+    conn.close()
+    assert _count(db, "papers") == 12
+
+    init_demo_db(db)  # must repair, not merely stop growing
+    assert _count(db, "papers") == 6
+    titles = sql_guard.run_query(db, "SELECT title FROM papers", max_rows=10)
+    assert len({r["title"] for r in titles["rows"]}) == 6
 
 
 def test_write_statements_are_rejected(tmp_path: Path) -> None:

@@ -82,15 +82,26 @@ def _lower(result: RunResult) -> str:
 # --------------------------------------------------------------------------
 # graders
 # --------------------------------------------------------------------------
+def _normalise(text: str) -> str:
+    """Lowercase and flatten punctuation so formatting cannot decide a grade.
+
+    A live run answered "CC BY-SA 4.0" -- exactly right -- and was graded a
+    failure against the expectation `cc-by-sa-4.0`. A grader that marks a
+    correct answer wrong on a hyphen teaches you to distrust the numbers, which
+    is worse than having no grader at all.
+    """
+    return re.sub(r"[^a-z0-9]+", " ", text.lower()).strip()
+
+
 def grade_contains(task: Task, result: RunResult) -> Grade:
     """All expected substrings must appear somewhere in the answer."""
     raw = _answer(result)
     if not raw:
         return Grade(False, 0.0, task.grader, failure_reason="no_answer")
 
-    haystack = raw.lower()
-    hits = [e for e in task.expect_contains if e.lower() in haystack]
-    missing = [e for e in task.expect_contains if e.lower() not in haystack]
+    haystack = _normalise(raw)
+    hits = [e for e in task.expect_contains if _normalise(e) in haystack]
+    missing = [e for e in task.expect_contains if _normalise(e) not in haystack]
     score = len(hits) / len(task.expect_contains) if task.expect_contains else 0.0
 
     # Citation markers are case-sensitive by design, so they must be scanned on

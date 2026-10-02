@@ -181,6 +181,107 @@ def test_safe_json_wraps_a_non_object_payload() -> None:
 
 
 # --------------------------------------------------------------------------
+# OllamaClient speaks the native API, not the /v1 shim
+#
+# Regression: Ollama's OpenAI-compatible surface silently discards tool calls
+# whose arguments are large, returning `{"content": "", "tool_calls": []}`
+# after generating the tokens. The agent cannot distinguish that from a model
+# that chose to say nothing, so it surfaced as `empty_response` and was charged
+# to the model in the eval -- 25% of the suite.
+# --------------------------------------------------------------------------
+class _StubOllama(OllamaClient):
+    """OllamaClient with the HTTP layer replaced by a canned response."""
+
+    def __init__(self, response: dict, **kw) -> None:  # type: ignore[no-untyped-def]
+        super().__init__(**kw)
+        self._response = response
+        self.sent: dict = {}
+
+    def _post(self, payload: dict) -> dict:
+        self.sent = payload
+        return self._response
+
+
+def _ollama_tool_call_response() -> dict:
+    return {
+        "done_reason": "stop",
+        "prompt_eval_count": 800,
+        "eval_count": 71,
+        "message": {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [
+                {"id": "c1", "function": {"name": "finalize",
+                                          "arguments": {"answer": "12 papers [Dknowle]"}}}
+            ],
+        },
+    }
+
+
+def test_ollama_posts_to_the_native_endpoint(settings) -> None:
+    c = _StubOllama(_ollama_tool_call_response(), settings=settings)
+    assert c._endpoint.endswith("/api/chat")
+    c.chat([Message.user("hi")])
+    assert c.sent["stream"] is False
+    # The native API sets generation limits under `options`, not `max_tokens`.
+    assert "num_predict" in c.sent["options"]
+
+
+def test_ollama_endpoint_normalises_a_v1_base_url(settings) -> None:
+    c = _StubOllama({}, settings=settings)
+    s = settings.model_copy(update={"ollama_base_url": "http://localhost:11434/v1"})
+    c.s = s
+    assert c._endpoint == "http://localhost:11434/api/chat"
+
+
+def test_ollama_reads_tool_calls_with_decoded_arguments(settings) -> None:
+    """Native Ollama returns `arguments` as an object, not a JSON string."""
+    c = _StubOllama(_ollama_tool_call_response(), settings=settings)
+    turn = c.chat([Message.user("hi")])
+    assert [x.name for x in turn.tool_calls] == ["finalize"]
+    assert turn.tool_calls[0].arguments == {"answer": "12 papers [Dknowle]"}
+    assert turn.usage.total == 871
+
+
+def test_ollama_accepts_json_string_arguments_too(settings) -> None:
+    resp = _ollama_tool_call_response()
+    resp["message"]["tool_calls"][0]["function"]["arguments"] = '{"answer": "x"}'
+    c = _StubOllama(resp, settings=settings)
+    assert c.chat([Message.user("hi")]).tool_calls[0].arguments == {"answer": "x"}
+
+
+def test_a_lost_response_raises_instead_of_looking_like_an_empty_turn(
+    settings,
+) -> None:
+    """A completion that generated tokens cannot have said nothing.
+
+    Reporting this as an empty model turn hides a client bug behind a model
+    metric -- which is exactly how 25% of the eval suite got misattributed.
+    """
+    resp = {
+        "done_reason": "stop",
+        "prompt_eval_count": 900,
+        "eval_count": 49,
+        "message": {"role": "assistant", "content": "", "tool_calls": []},
+    }
+    c = _StubOllama(resp, settings=settings)
+    with pytest.raises(ModelError, match="lost response"):
+        c.chat([Message.user("hi")])
+
+
+def test_a_genuinely_silent_model_is_not_an_error(settings) -> None:
+    """Zero tokens generated means the model really did stop without output."""
+    resp = {
+        "done_reason": "stop",
+        "prompt_eval_count": 900,
+        "eval_count": 0,
+        "message": {"role": "assistant", "content": "", "tool_calls": []},
+    }
+    c = _StubOllama(resp, settings=settings)
+    assert c.chat([Message.user("hi")]).content == ""
+
+
+# --------------------------------------------------------------------------
 # tool-call round trip through the base types
 # --------------------------------------------------------------------------
 def test_message_tool_call_serialises_to_the_openai_shape() -> None:

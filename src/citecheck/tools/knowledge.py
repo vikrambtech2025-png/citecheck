@@ -54,6 +54,7 @@ def query_sqlite(sql: str, ctx: ToolContext) -> ToolResult:
         text=text,
         kind="db",
         content_hash=__import__("hashlib").sha256(text.encode()).hexdigest()[:16],
+        row_count=result["row_count"],
     )
     return ToolResult(
         data={**result, "source_id": source.id, "database": db_name},

@@ -58,6 +58,55 @@ def test_every_contains_task_has_expectations() -> None:
             assert t.expect_contains, f"{t.id} is graded on contains but expects nothing"
 
 
+def test_seeded_facts_match_the_eval_expectations(seeded) -> None:
+    """An eval expectation that disagrees with the seed grades correct answers wrong.
+
+    Two of these drifted silently and were only caught by reading a real run:
+    `sh06` expected 6 papers while a duplication bug made the database report 12,
+    and `mh05` expected 2 NeurIPS papers when there have always been 3. Both
+    looked like model failures in the report. Asserting the seeded facts here
+    means a future seed change breaks a test instead of quietly skewing a table.
+    """
+    from citecheck.tools.sql_guard import run_query
+
+    db = seeded.sqlite_path or (seeded.workspace_dir / "knowledge.sqlite3")
+
+    def scalar(sql: str) -> int:
+        return int(run_query(db, sql, max_rows=1)["rows"][0]["v"])
+
+    def titles(where: str = "") -> list[str]:
+        sql = "SELECT title AS t FROM papers" + (f" WHERE {where}" if where else "")
+        return [r["t"] for r in run_query(db, sql, max_rows=50)["rows"]]
+
+    facts = {
+        "total papers": scalar("SELECT COUNT(*) AS v FROM papers"),
+        "total datasets": scalar("SELECT COUNT(*) AS v FROM datasets"),
+        "neurips papers": scalar("SELECT COUNT(*) AS v FROM papers WHERE venue = 'NeurIPS'"),
+        "papers from 2020 or later": scalar(
+            "SELECT COUNT(*) AS v FROM papers WHERE year >= 2020"
+        ),
+    }
+    assert facts["total papers"] == 6
+    assert facts["total datasets"] == 4
+    assert facts["neurips papers"] == 3
+    assert len(titles()) == len(set(titles())), "papers must not contain duplicate titles"
+
+    by_id = {t.id: t for t in ALL_TASKS}
+    assert "6" in by_id["sh06"].expect_contains, facts
+    assert "3" in by_id["mh05"].expect_contains, facts
+
+    # The licences the citation/refusal tasks name must actually be in the data,
+    # or those tasks are unpassable for reasons that have nothing to do with the
+    # model.
+    licences = {
+        r["name"]: r["license"]
+        for r in run_query(db, "SELECT name, license FROM datasets", max_rows=20)["rows"]
+    }
+    assert licences["HotpotQA"] == "cc-by-sa-4.0"
+    assert licences["MMLU"] == "MIT"
+    assert licences["MS MARCO"] == "research"
+
+
 def test_every_refusal_task_has_markers() -> None:
     for t in ALL_TASKS:
         if t.grader == "refusal":
@@ -107,6 +156,28 @@ def test_contains_grader_scores_partially() -> None:
     assert not g.passed
     assert g.score == pytest.approx(0.5)
     assert g.failure_reason
+
+
+def test_contains_grader_ignores_punctuation_formatting() -> None:
+    """Regression: a correct answer was graded wrong over a hyphen.
+
+    A live run answered "Creative Commons Attribution-ShareAlike 4.0
+    International (CC BY-SA 4.0)" and the grader failed it against the
+    expectation `cc-by-sa-4.0`. A grader that marks a right answer wrong on
+    formatting teaches you to distrust every number it reports.
+    """
+    task = _task("contains", expect_contains=["cc-by-sa-4.0"])
+    assert grade(task, _result("Licensed CC BY-SA 4.0 [Sabc1234].")).passed
+    assert grade(task, _result("Licensed CC-BY-SA-4.0 [Sabc1234].")).passed
+    assert grade(task, _result("Licensed cc by sa 4.0 [Sabc1234].")).passed
+    # Genuinely wrong licence still fails.
+    assert not grade(task, _result("Licensed under MIT [Sabc1234].")).passed
+
+
+def test_contains_grader_normalisation_does_not_create_false_hits() -> None:
+    """Flattening punctuation must not let one string satisfy an unrelated one."""
+    task = _task("contains", expect_contains=["neurips2017"])
+    assert not grade(task, _result("NeurIPS, 2017 [Sabc1234].")).passed
 
 
 def test_citation_grader_requires_a_successful_finalize() -> None:
