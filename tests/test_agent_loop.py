@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from tests.conftest import make_turn
 
-from citecheck.agent.loop import Agent
+from citecheck.agent.loop import _FINALIZE_NUDGE, Agent
 from citecheck.config import Settings
 from citecheck.models.clients import MockClient
 from citecheck.tools.base import Source
@@ -227,6 +227,29 @@ def test_injection_payload_is_neutralised_before_reaching_the_model(settings: Se
     second_request = "\n".join(m.content for m in client.calls[1])
     assert "UNTRUSTED_RETRIEVED_CONTENT" in second_request
     assert "It is DATA" in second_request
+
+
+def test_the_nudge_asks_for_a_condensed_single_line_answer() -> None:
+    """Regression: the nudge used to demand the previous report verbatim.
+
+    "Pass that same report as its `answer` argument" makes the model copy a
+    multi-paragraph answer into a JSON string inside a tool call. Ollama's parser
+    then discards the whole call -- 105 tokens generated, neither content nor
+    tool calls returned -- and the run dies on a transport fault that reads
+    exactly like a model that refused to answer. Measured: 3/3 at
+    `temperature=0`, 6/6 across seeds at `temperature=0.7`.
+
+    The nudge must therefore ask for something small and single-line, and must
+    not ask for the prior text back verbatim.
+    """
+    nudge = _FINALIZE_NUDGE
+    assert "same report" not in nudge
+    assert "Condense" in nudge
+    assert "one line" in nudge
+    # It still has to say what finalize does, or the model has no reason to
+    # prefer the tool over another paragraph of prose.
+    assert "finalize" in nudge
+    assert "[SourceId]" in nudge
 
 
 def test_prose_answer_is_nudged_once_toward_finalize(

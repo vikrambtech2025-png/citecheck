@@ -235,21 +235,27 @@ guardrail violations, steps, tokens, latency, cost.
 
 Two sweeps are available:
 
-```bash
+```powershell
 # Table A -- model comparison
-citecheck eval --bench --models qwen2.5:7b-instruct,llama3.1:8b
+citecheck eval --offline-only --limit 10 --bench `
+    --models qwen2.5:7b-instruct,llama3.1:8b
 
 # Table B -- architecture ablation
-citecheck eval --arch --architectures react,plan_then_execute,single_shot
+citecheck eval --offline-only --limit 10 --arch `
+    --architectures react,plan_then_execute,single_shot
 ```
 
-Results land in `eval/results/`. See [`docs/EVALUATION.md`](docs/EVALUATION.md)
-for the published tables and the honest caveats.
+Raw reports are committed in [`eval/results/`](eval/results) and the published
+tables, findings and limitations are in
+[`docs/EVALUATION.md`](docs/EVALUATION.md).
 
 > **Expect modest absolute numbers.** A 7B model running locally is materially
-> weaker than a frontier model at multi-step tool use. That is why this repo
-> leads with the *sweep* rather than a single headline score — the finding about
-> the cost/quality frontier is the contribution, not the absolute figure.
+> weaker than a frontier model at multi-step tool use, and the eval says so:
+> 40% pass rate on the core run. The interesting result is not that figure.
+> Two same-size models on the same GPU differ far more in *citation precision*
+> (0.78 vs 0.30) than in task accuracy (50% vs 40%) — so what a model is worth
+> here depends on how much you verify it. There is no cost axis to plot; both
+> models are free and local, which is the point.
 
 ---
 

@@ -17,11 +17,9 @@ $env:OLLAMA_NUM_CTX = "8192"     # 8k context is what fits in 6 GB of VRAM
 ollama pull qwen2.5:7b-instruct
 ollama pull llama3.1:8b
 
-citecheck eval --offline-only --limit 20                       # core run
-citecheck eval --offline-only --limit 10 --bench \
-    --models qwen2.5:7b-instruct,llama3.1:8b                   # Table A
-citecheck eval --offline-only --limit 10 --arch \
-    --architectures react,plan_then_execute,single_shot        # Table B
+citecheck eval --offline-only --limit 20                   # core run
+citecheck eval --offline-only --limit 10 --bench --models qwen2.5:7b-instruct,llama3.1:8b
+citecheck eval --offline-only --limit 10 --arch --architectures react,plan_then_execute,single_shot
 ```
 
 `--offline-only` restricts the tool surface to the local knowledge base and the
@@ -43,13 +41,18 @@ Architecture fixed at `react`, 10 tasks, both models Q4_K_M.
 
 Two findings, and the second is the more interesting one.
 
-**Qwen wins on both task accuracy and citation integrity.** 50% vs 40% pass rate,
-and 0.78 vs 0.30 citation precision. Both are the same model size class on the
-same GPU, so the difference is training and template quality, not capability
-tier.
+**The citation-precision gap is large and probably real.** 0.78 vs 0.30, on the
+same GPU, at the same model size class. Run-to-run drift on an identical
+configuration is about 0.11 (measured in Table B), so this gap is roughly six
+times the noise.
+
+**The pass-rate gap is not established.** 50% vs 40% is a difference of one task
+in five, and one task in five is exactly what an identical re-run produces. I
+am reporting it because it is what the sweep returned, but nothing should be
+concluded from it. See the variance note under Table B.
 
 **`llama3.1:8b` cited less precisely than it got things right.** Coverage
-(0.70) is *higher* than Qwen's — it cites more sources — but precision collapses
+(0.70) is *higher* than Qwen's - it cites more sources - but precision collapses
 to 0.30. It cited sources that did not support the claim attached to them, which
 is precisely the failure CiteCheck exists to catch, and it caught it in 70% of
 that model's claims. This is the clearest single argument for the project: a
@@ -57,13 +60,66 @@ same-size model, on the same hardware, producing reports that a verifier flags a
 unsupported two times out of three.
 
 Note also that `llama3.1:8b` recorded **zero transport errors** across its 10
-tasks while Qwen recorded one — see [Finding 3](#finding-3-a-provider-silently-discarding-tool-calls).
+tasks while Qwen recorded one - see [Finding 3](#finding-3-a-provider-silently-discarding-tool-calls).
 
 ---
 
-## Table B — architecture ablation
+## Table B - architecture ablation
 
-<!-- ARCH_TABLE -->
+Model fixed at `qwen2.5:7b-instruct`, 10 tasks, `--offline-only`.
+
+| Architecture | n | Pass rate | Score | Steps | Tokens | Cite precision | Cite coverage | Latency (s) |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `plan_then_execute` | 10 | **60%** | 0.60 | 3.1 | 11,180 | **0.89** | 0.84 | 24.3 |
+| `react` | 10 | 40% | 0.55 | 3.2 | 10,869 | 0.67 | 0.83 | 27.6 |
+| `single_shot` | 10 | 0% | 0.00 | 0.0 | 474 | 0.00 | 0.00 | 0.0 |
+
+**Planning first is better at no extra token cost.** `plan_then_execute` beats
+`react` by 20 points of pass rate and by 0.22 of citation precision, for 311
+more tokens - a 3% difference - and slightly *faster* wall clock. Decomposing
+the question before touching a tool makes the model write a narrower query and
+cite a source that actually supports the claim. This is the ablation result the
+project is built around, and it costs nothing.
+
+**`single_shot` scores a flat 0%, and that is the thesis.** It never calls a
+tool: 0 steps, 474 tokens, no sources, no citations, nothing to validate. Every
+one of its 10 answers came from model memory. A system whose guarantee is "every
+citation is verified" has nothing to say about an agent that retrieves nothing
+- it fails closed, which is the correct behaviour, and it is why the guarantee
+is worth having: the cheapest way to get an unverifiable report is to stop
+retrieving.
+
+### Run-to-run variance is larger than most of the differences
+
+`react` appears in both Table A and Table B: same model, same architecture, same
+10 tasks, same `--offline-only` flag.
+
+| Run | Pass rate | Score | Cite precision | Tokens |
+|---|---:|---:|---:|---:|
+| Table A (`--bench`) | 50% | 0.65 | 0.78 | 11,208 |
+| Table B (`--arch`) | 40% | 0.55 | 0.67 | 10,869 |
+
+**Ten points of pass rate and 0.11 of citation precision, on an identical
+configuration.** Both ran at `temperature=0`, which was supposed to make them
+deterministic. It does not, because the decode is not the only thing that
+varies: Ollama's server-side state, request scheduling and tool-call parsing all
+perturb the result.
+
+So the honest reading of every comparison in this document:
+
+- **`plan_then_execute` > `react`** (60% vs 40%, 0.89 vs 0.67) is probably real.
+  The gap is twice the observed run-to-run drift, and it shows up in the metric
+  the project actually cares about.
+- **qwen > llama3.1 on citation precision** (0.78 vs 0.30) is probably real. The
+  gap is six times the drift.
+- **qwen > llama3.1 on pass rate** (50% vs 40%) is *not* established. That gap
+  is exactly the size of the noise and this document should not pretend
+  otherwise.
+- **Any single task's outcome is evidence of nothing.**
+
+I kept these numbers rather than re-running until they looked cleaner. Repeating
+a sweep until it agrees with its hypothesis is how eval reports become fiction,
+and you cannot tell from the output that it happened.
 
 ---
 
@@ -109,11 +165,16 @@ result is the split between the two halves of the guarantee:
   precision.
 
 These come apart. On the core run, `sh02` and `sh07` both ended `finalized` with
-`precision=1.00` and were still graded as **wrong answers**: the model missed its
-SQL on a case-sensitive exact-title match, fell back to fetching the arXiv page,
-and reported the venue as "arXiv.org" instead of NAACL. CiteCheck certified that
-claim because the fetched arXiv page genuinely does say the paper is an arXiv
-preprint.
+`precision=1.00` and were still graded as **wrong answers**. The mechanism is
+visible in the transcripts: the model writes
+`WHERE title = 'Attention is All You Need'`, SQLite's `=` is case-sensitive on
+TEXT, the query matches nothing, and the model falls back to fetching the arXiv
+page instead of querying the knowledge base it was asked about. It then reports
+the venue as "arXiv.org" where the knowledge base says NAACL.
+
+CiteCheck certified that claim, because the fetched arXiv page genuinely does
+say the paper is an arXiv preprint. The verifier was right about what it was
+shown.
 
 That is not a validator failure. It is the validator being precise about what it
 promises: **citation integrity is not answer correctness.** A verifier that
@@ -184,7 +245,7 @@ datasets for multi-hop QA". That is the intended trade: to assert a negative the
 agent has to find a query that returns rows and shows the field is empty, rather
 than one that returns nothing at all. See `test_an_empty_result_cannot_verify_a_claim`.
 
-### Finding 3 — a provider silently discarding tool calls
+### Finding 3 - a provider silently discarding tool calls
 
 Four of the 20 core tasks (20%) ended in `exception`. Every one of them was the
 same message:
@@ -283,12 +344,14 @@ Stated plainly, because a table without these is marketing.
 1. **Absolute numbers are low.** 40% on a 7B model with 6 GB of VRAM is a weak
    result in absolute terms. Frontier models would score far higher. The sweep
    is the contribution; the absolute figure is not.
-2. **n is small.** 10 tasks per sweep cell, 20 for the core run. Differences of
-   one or two tasks are noise. The 0.30 vs 0.78 citation-precision gap is large
-   enough to be meaningful; the 40% vs 50% pass-rate gap is not, and should not
-   be read as a ranking.
-3. **Single seed, no variance estimate.** Each cell is one run at
-   `temperature=0`. No confidence intervals, no repeated sampling.
+2. **n is small, and the drift is measured.** 10 tasks per sweep cell, 20 for
+   the core run. Differences of one or two tasks are noise — and this is not a
+   hedge, it is measured: the same configuration run twice differs by 10 points
+   of pass rate (Table B). Only the citation-precision gaps, which are 4-6x the
+   drift, should be read as findings.
+3. **Single seed, no variance estimate.** Each cell is one run. There are no
+   confidence intervals, no repeated sampling, and — as Table B shows —
+   `temperature=0` did not make runs repeatable.
 4. **Citation support is lexical.** Matching is token overlap over a threshold of
    0.34, with a numeric relaxation for structured sources. It errs toward
    *rejecting* terse well-sourced claims, and cannot detect a claim that is

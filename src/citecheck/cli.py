@@ -14,6 +14,7 @@ from typing import Any
 
 from citecheck import __version__
 from citecheck.guardrails import injection
+from citecheck.models.base import ModelError
 
 log = logging.getLogger("citecheck")
 
@@ -522,6 +523,21 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print()
         return 130
+    except ModelError as e:
+        # A model or transport failure is an operational outcome, not a bug in
+        # the CLI. A traceback both looks broken and buries the one line that
+        # says what actually went wrong -- the eval's most common failure mode
+        # is a lost Ollama tool call, and that message says so explicitly.
+        print(file=sys.stderr)
+        print(bold("model call failed"), file=sys.stderr)
+        print(f"  {e}", file=sys.stderr)
+        print(
+            "\n  This is a provider/transport failure, not a verification "
+            "failure:\n  no answer was produced, so nothing was validated. "
+            "Re-run, or check\n  `ollama list` and `citecheck doctor`.",
+            file=sys.stderr,
+        )
+        return 3
 
 
 if __name__ == "__main__":  # pragma: no cover

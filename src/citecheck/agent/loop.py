@@ -65,11 +65,27 @@ ARCHITECTURES = ("react", "plan_then_execute", "single_shot")
 #: Sent when the model returns prose instead of calling `finalize`. Small local
 #: models routinely narrate an answer and stop; without this nudge the citation
 #: gate never runs and the run is scored as a failure for a protocol reason.
+#:
+#: It asks for a *condensed* answer rather than the previous report verbatim, and
+#: that is load-bearing rather than stylistic. Telling the model to re-send a
+#: multi-paragraph report makes it emit a long, multi-line JSON string inside a
+#: tool argument, and Ollama's parser discards the entire call when that JSON is
+#: malformed -- a 105-token response returning neither content nor tool calls.
+#: Measured: the loss reproduced 3/3 at `temperature=0` and 6/6 across seeds at
+#: `temperature=0.7`, so it is structural rather than a flaky decode. Asking for
+#: one short paragraph keeps the argument small and single-line.
+#:
+#: Condensing does not weaken the guarantee. Whatever the model submits to
+#: `finalize` is validated by the same validator, and if it declines to call the
+#: tool at all the prose is validated here instead.
 _FINALIZE_NUDGE = (
     "You answered in plain text, but that answer has NOT been citation-checked.\n"
-    "Call the `finalize` tool now and pass that same report as its `answer` argument. "
-    "finalize verifies every [SourceId] against the sources you actually retrieved and "
-    "rejects fabricated or unsupported citations. Do not reply with prose."
+    "Call the `finalize` tool now. Condense your report into its `answer` argument: "
+    "keep only the claims you can support with a [SourceId] you actually retrieved, "
+    "and write it as a short single paragraph on one line -- no bullet lists, no "
+    "blank lines, no markdown headers. finalize verifies every [SourceId] against "
+    "the sources you retrieved and rejects fabricated or unsupported citations. "
+    "Do not reply with prose."
 )
 
 #: Identical (tool, error) pairs tolerated before the run is declared stalled.
