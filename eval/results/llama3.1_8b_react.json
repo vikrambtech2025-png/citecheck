@@ -1,0 +1,512 @@
+{
+  "label": "llama3.1:8b",
+  "model": "llama3.1:8b",
+  "architecture": "react",
+  "started_at": 1790966832.5197458,
+  "summary": {
+    "n": 10,
+    "passed": 4,
+    "pass_rate": 0.4,
+    "mean_score": 0.4,
+    "mean_steps": 2.5,
+    "mean_tokens": 4298.6,
+    "mean_latency_s": 17.503,
+    "mean_wall_s": 27.044999999999998,
+    "citation_precision": 0.3,
+    "citation_coverage": 0.7,
+    "runs_with_guardrail_events": 0,
+    "budget_exhausted": 0,
+    "model_errors": 0,
+    "exceptions": 0
+  },
+  "by_category": {
+    "single_hop": {
+      "n": 10,
+      "passed": 4,
+      "pass_rate": 0.4,
+      "mean_score": 0.4
+    }
+  },
+  "outcomes": [
+    {
+      "task_id": "sh01",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "In which year and at which venue was the Transformer paper published? Use the local knowledge base.",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "no_answer"
+      },
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 3,
+      "tokens": 4184,
+      "latency_s": 19.71,
+      "wall_s": 23.64,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": [
+          {
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: The Transformer paper was published in 2017 ....",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh02",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Who are the listed authors of the RAG paper in the knowledge base?",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "no_answer"
+      },
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 4,
+      "tokens": 5121,
+      "latency_s": 26.35,
+      "wall_s": 30.74,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": [
+          {
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: The authors of the RAG paper in the knowledge base are not listed in the database ....",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh03",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "List every paper in the knowledge base published in 2023.",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "2/2 expected strings found",
+        "metrics": {
+          "hits": 2,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 5722,
+      "latency_s": 20.53,
+      "wall_s": 60.24,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 0.333,
+        "precision": 0.0,
+        "claims_checked": 3,
+        "used_sources": [],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "unknown_source",
+            "detail": "cited [D1a2b3c4d] was never fetched; available: ['Dknowle']",
+            "severity": "error"
+          },
+          {
+            "kind": "unknown_source",
+            "detail": "cited [D2a3b4c5d] was never fetched; available: ['Dknowle']",
+            "severity": "error"
+          },
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          },
+          {
+            "kind": "unsupported_claim",
+            "detail": "claim not supported by cited source(s) [] (score 0.00 < 0.34): The error message indicates that the sources  and  were not fetched, and the claim \"Papers published in 2023: ...",
+            "severity": "error"
+          },
+          {
+            "kind": "unsupported_claim",
+            "detail": "claim not supported by cited source(s) [] (score 0.00 < 0.34): The error message indicates that the sources  and  were not fetched, and the claim \"Papers published in 2023: ...",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh04",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Which dataset in the knowledge base has the largest size in MB, and what is it?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "2/2 expected strings found",
+        "metrics": {
+          "hits": 2,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 3491,
+      "latency_s": 14.92,
+      "wall_s": 19.93,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh05",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "What licence is listed for the HotpotQA dataset?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 3436,
+      "latency_s": 13.82,
+      "wall_s": 18.55,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh06",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "How many papers are in the local knowledge base in total?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 3367,
+      "latency_s": 12.54,
+      "wall_s": 16.76,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh07",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "What is the venue of the BERT paper in the knowledge base?",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "0/1 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 1,
+          "has_citations": false
+        },
+        "failure_reason": "missing expected content: ['naacl']"
+      },
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 4168,
+      "latency_s": 14.04,
+      "wall_s": 21.85,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 0.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "no_citations",
+            "detail": "the answer contains no [SourceId] citation markers",
+            "severity": "error"
+          },
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          },
+          {
+            "kind": "no_cited_claims",
+            "detail": "no substantive claim carries a citation",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh08",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Name the datasets in the knowledge base that are for multi-hop question answering.",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "0/1 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['hotpotqa']"
+      },
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 4214,
+      "latency_s": 13.48,
+      "wall_s": 24.99,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 0.667,
+        "precision": 0.0,
+        "claims_checked": 3,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": [
+          {
+            "kind": "unknown_source",
+            "detail": "cited [SourceId] was never fetched; available: ['Dknowle']",
+            "severity": "error"
+          },
+          {
+            "kind": "unsupported_claim",
+            "detail": "claim not supported by cited source(s) [] (score 0.00 < 0.34): The answer contains no  citation markers, and no substantive claim carries a citation....",
+            "severity": "error"
+          },
+          {
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: The tool  was fetched but never cited....",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh09",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Which paper in the knowledge base introduced the MCP specification?",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "no_answer"
+      },
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 4,
+      "tokens": 5098,
+      "latency_s": 26.16,
+      "wall_s": 30.16,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": [
+          {
+            "kind": "no_evidence",
+            "detail": "claim rests only on query result(s) that returned zero rows, which is an absence of evidence rather than a finding ['Dknowle']: The paper that introduced the MCP specification is not found in the knowledge base....",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh10",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Summarise the abstract of the ReAct paper as recorded in the knowledge base.",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "0/1 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 1,
+          "has_citations": false
+        },
+        "failure_reason": "missing expected content: ['interleav']"
+      },
+      "stop_reason": "final_response_without_finalize",
+      "steps": 2,
+      "tokens": 4185,
+      "latency_s": 13.48,
+      "wall_s": 23.59,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 0.0,
+        "precision": 0.0,
+        "claims_checked": 2,
+        "used_sources": [],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "no_citations",
+            "detail": "the answer contains no [SourceId] citation markers",
+            "severity": "error"
+          },
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          },
+          {
+            "kind": "no_cited_claims",
+            "detail": "no substantive claim carries a citation",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    }
+  ]
+}

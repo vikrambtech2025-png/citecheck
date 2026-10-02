@@ -26,8 +26,12 @@ workspace/
 outbox/
 !outbox/.gitkeep
 runs/
-results/
+/results/
 *.sqlite3
+
+# eval/results/ is deliberately NOT ignored. Those JSON reports are the evidence
+# behind every number in docs/EVALUATION.md; a table nobody can audit is just a
+# claim. They are a few KB each and regenerate from the commands in that doc.
 *.db
 *.log
 *.log.err
