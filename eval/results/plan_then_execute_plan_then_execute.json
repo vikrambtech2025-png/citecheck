@@ -1,0 +1,471 @@
+{
+  "label": "plan_then_execute",
+  "model": "qwen2.5:7b-instruct",
+  "architecture": "plan_then_execute",
+  "started_at": 1790967717.3319755,
+  "summary": {
+    "n": 10,
+    "passed": 6,
+    "pass_rate": 0.6,
+    "mean_score": 0.6,
+    "mean_steps": 3.1,
+    "mean_tokens": 11180.3,
+    "mean_latency_s": 24.342,
+    "mean_wall_s": 50.253,
+    "citation_precision": 0.8888888888888888,
+    "citation_coverage": 0.8371111111111111,
+    "runs_with_guardrail_events": 0,
+    "budget_exhausted": 0,
+    "model_errors": 0,
+    "exceptions": 1
+  },
+  "by_category": {
+    "single_hop": {
+      "n": 10,
+      "passed": 6,
+      "pass_rate": 0.6,
+      "mean_score": 0.6
+    }
+  },
+  "outcomes": [
+    {
+      "task_id": "sh01",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "In which year and at which venue was the Transformer paper published? Use the local knowledge base.",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "0/2 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 2,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['2017', 'neurips']"
+      },
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 4482,
+      "latency_s": 10.28,
+      "wall_s": 19.1,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh02",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Who are the listed authors of the RAG paper in the knowledge base?",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "0/1 expected strings found",
+        "metrics": {
+          "hits": 0,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": "missing expected content: ['lewis']"
+      },
+      "stop_reason": "finalized",
+      "steps": 4,
+      "tokens": 22380,
+      "latency_s": 40.94,
+      "wall_s": 85.83,
+      "sources": [
+        "Sc7a865b5",
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Sc7a865b5"
+        ],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh03",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "List every paper in the knowledge base published in 2023.",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "error: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 108 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+      },
+      "stop_reason": "exception",
+      "steps": 0,
+      "tokens": 0,
+      "latency_s": 0.0,
+      "wall_s": 55.15,
+      "sources": [],
+      "validation": null,
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": "ModelError: model call failed after 3 attempts: Ollama returned no content and no tool calls after generating 108 tokens (finish_reason='stop'). This is a lost response, not a silent model -- do not count it as an empty turn."
+    },
+    {
+      "task_id": "sh04",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Which dataset in the knowledge base has the largest size in MB, and what is it?",
+      "grade": {
+        "passed": false,
+        "score": 0.0,
+        "grader": "contains",
+        "detail": "",
+        "metrics": {},
+        "failure_reason": "no_answer"
+      },
+      "stop_reason": "no_progress_repeated_failure",
+      "steps": 5,
+      "tokens": 12199,
+      "latency_s": 31.61,
+      "wall_s": 53.27,
+      "sources": [
+        "Dknowle",
+        "F4ca4c326"
+      ],
+      "validation": {
+        "ok": false,
+        "coverage": 1.0,
+        "precision": 0.0,
+        "claims_checked": 1,
+        "used_sources": [],
+        "unused_sources": [
+          "Dknowle",
+          "F4ca4c326"
+        ],
+        "issues": [
+          {
+            "kind": "unknown_source",
+            "detail": "cited [S1a2b3c4d] was never fetched; available: ['Dknowle', 'F4ca4c326']",
+            "severity": "error"
+          },
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          },
+          {
+            "kind": "unused_source",
+            "detail": "fetched [F4ca4c326] but never cited",
+            "severity": "warning"
+          },
+          {
+            "kind": "unsupported_claim",
+            "detail": "claim not supported by cited source(s) [] (score 0.00 < 0.34): The tool provided a list of datasets or tasks related to natural language processing: Dknowle, F4ca4c326 ....",
+            "severity": "error"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh05",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "What licence is listed for the HotpotQA dataset?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 3,
+      "tokens": 18651,
+      "latency_s": 19.01,
+      "wall_s": 38.74,
+      "sources": [
+        "S8fe9a82f"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "S8fe9a82f"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh06",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "How many papers are in the local knowledge base in total?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 2,
+      "tokens": 4323,
+      "latency_s": 10.29,
+      "wall_s": 18.16,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh07",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "What is the venue of the BERT paper in the knowledge base?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 3,
+      "tokens": 6595,
+      "latency_s": 14.5,
+      "wall_s": 23.86,
+      "sources": [
+        "Dknowle"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 1.0,
+        "precision": 1.0,
+        "claims_checked": 1,
+        "used_sources": [
+          "Dknowle"
+        ],
+        "unused_sources": [],
+        "issues": []
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh08",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Name the datasets in the knowledge base that are for multi-hop question answering.",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 4,
+      "tokens": 14508,
+      "latency_s": 35.64,
+      "wall_s": 65.82,
+      "sources": [
+        "Dknowle",
+        "S398a4634"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 0.667,
+        "precision": 1.0,
+        "claims_checked": 3,
+        "used_sources": [
+          "S398a4634"
+        ],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh09",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Which paper in the knowledge base introduced the MCP specification?",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 4,
+      "tokens": 10536,
+      "latency_s": 27.93,
+      "wall_s": 46.22,
+      "sources": [
+        "Dknowle",
+        "Sa3bc19ff"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 0.667,
+        "precision": 1.0,
+        "claims_checked": 3,
+        "used_sources": [
+          "Sa3bc19ff"
+        ],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    },
+    {
+      "task_id": "sh10",
+      "category": "single_hop",
+      "grader": "contains",
+      "prompt": "Summarise the abstract of the ReAct paper as recorded in the knowledge base.",
+      "grade": {
+        "passed": true,
+        "score": 1.0,
+        "grader": "contains",
+        "detail": "1/1 expected strings found",
+        "metrics": {
+          "hits": 1,
+          "expected": 1,
+          "has_citations": true
+        },
+        "failure_reason": null
+      },
+      "stop_reason": "finalized",
+      "steps": 4,
+      "tokens": 18129,
+      "latency_s": 53.22,
+      "wall_s": 96.38,
+      "sources": [
+        "Dknowle",
+        "Sa72bea73"
+      ],
+      "validation": {
+        "ok": true,
+        "coverage": 0.2,
+        "precision": 1.0,
+        "claims_checked": 5,
+        "used_sources": [
+          "Sa72bea73"
+        ],
+        "unused_sources": [
+          "Dknowle"
+        ],
+        "issues": [
+          {
+            "kind": "unused_source",
+            "detail": "fetched [Dknowle] but never cited",
+            "severity": "warning"
+          }
+        ]
+      },
+      "injection_flags": 0,
+      "denied_calls": 0,
+      "error": null
+    }
+  ]
+}
